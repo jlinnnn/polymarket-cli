@@ -7,6 +7,7 @@ from polymarket_cli.commands.search import search
 from polymarket_cli.commands.recommend import recommend
 from polymarket_cli.commands.backtest import backtest
 from polymarket_cli.commands.whales import whales
+from polymarket_cli.commands.serve import serve
 from polymarket_cli.commands.cache_cmd import app as cache_app
 
 app = typer.Typer(
@@ -23,6 +24,7 @@ app.command("search", help="Search active markets by title")(search)
 app.command("recommend", help="Trade signals: momentum, SMA, mean-reversion, or composite")(recommend)
 app.command("backtest", help="Backtest strategies against historical price data")(backtest)
 app.command("whales", help="Top whale positions for an event")(whales)
+app.command("serve", help="Launch the interactive web demo in your browser")(serve)
 app.add_typer(cache_app, name="cache", help="Manage the local data cache")
 
 

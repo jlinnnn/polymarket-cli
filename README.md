@@ -40,6 +40,27 @@ polymarket --help
 
 Add `--format json` to any command to force JSON output in a terminal; when output is piped, JSON is emitted automatically.
 
+There's also a browser [`serve`](#web-demo) command for a quick visual demo.
+
+---
+
+## Web demo
+
+Prefer a browser? A lightweight web UI ships with the project — search markets and browse live prices and outcomes, powered by the same public API.
+
+```bash
+pip install -e ".[web]"   # one-time: install the web extra
+polymarket serve          # then open http://127.0.0.1:8000
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--host` | `127.0.0.1` | Host to bind |
+| `--port / -p` | `8000` | Port to bind |
+| `--reload` | off | Auto-reload on code changes |
+
+It's a small [FastAPI](https://fastapi.tiangolo.com) app that reuses the CLI's API clients, with a single self-contained HTML page — no build step, no external assets.
+
 ---
 
 ### `dashboard`

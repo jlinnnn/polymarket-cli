@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Polymarket CLI — Web Demo</title>
+<style>
+  :root {
+    --bg: #0d1017;
+    --panel: #151a23;
+    --panel-2: #1b212c;
+    --border: #262d3a;
+    --text: #e6e9ef;
+    --muted: #8b93a3;
+    --accent: #4f8cff;
+    --green: #35c46b;
+    --red: #f0616d;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
+  header { margin-bottom: 24px; }
+  .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -0.02em; }
+  .tag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px;
+  }
+  .sub { color: var(--muted); margin: 6px 0 0; font-size: 14px; }
+  .controls { display: flex; gap: 10px; margin: 22px 0; flex-wrap: wrap; }
+  input[type="search"] {
+    flex: 1; min-width: 220px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); padding: 11px 14px; font-size: 15px; outline: none;
+  }
+  input[type="search"]:focus { border-color: var(--accent); }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 10px;
+    padding: 11px 18px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  button.ghost { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+  button:hover { filter: brightness(1.08); }
+
+  .status { color: var(--muted); font-size: 14px; padding: 8px 2px; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; margin-bottom: 12px; cursor: pointer; transition: border-color .15s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-top { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+  .card-title { font-weight: 600; font-size: 16px; margin: 0; }
+  .vol { text-align: right; white-space: nowrap; color: var(--muted); font-size: 13px; }
+  .vol b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .outcomes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 12px; font-size: 13px;
+  }
+  .chip .name { color: var(--text); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .pct { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .more { color: var(--muted); font-size: 13px; align-self: center; }
+
+  /* modal */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow: auto;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    max-width: 640px; width: 100%; padding: 22px 24px;
+  }
+  .modal h2 { margin: 0 0 4px; font-size: 19px; }
+  .modal .close { float: right; background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; padding: 0; }
+  .mkt { border-top: 1px solid var(--border); padding: 12px 0; }
+  .mkt-q { font-size: 14px; margin: 0 0 8px; color: var(--text); }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; font-size: 13px; }
+  .bar-name { flex: 0 0 150px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; background: var(--panel-2); border-radius: 5px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); }
+  .bar-val { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; }
+  .modal a { color: var(--accent); text-decoration: none; font-size: 14px; }
+  footer { margin-top: 32px; color: var(--muted); font-size: 13px; text-align: center; }
+  footer code { background: var(--panel); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Polymarket CLI</h1>
+      <span class="tag">web demo</span>
+    </div>
+    <p class="sub">Live prediction-market data from Polymarket's public API — same data the CLI shows, in your browser.</p>
+  </header>
+
+  <div class="controls">
+    <input id="q" type="search" placeholder="Search markets (e.g. bitcoin, election, fed)…" autocomplete="off" />
+    <button id="searchBtn">Search</button>
+    <button id="topBtn" class="ghost">Top markets</button>
+  </div>
+
+  <div id="status" class="status">Loading top markets…</div>
+  <div id="list"></div>
+
+  <footer>
+    Explore it as a terminal tool: <code>polymarket dashboard</code> · <code>polymarket recommend</code>
+  </footer>
+</div>
+
+<div id="overlay" class="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+const fmtVol = (v) => {
+  if (v == null) return "—";
+  if (v >= 1e9) return "$" + (v / 1e9).toFixed(1) + "B";
+  if (v >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
+  if (v >= 1e3) return "$" + (v / 1e3).toFixed(0) + "K";
+  return "$" + v.toFixed(0);
+};
+const pct = (p) => Math.round(p * 100) + "%";
+const pctColor = (p) => p >= 0.5 ? "var(--green)" : (p <= 0.15 ? "var(--red)" : "var(--text)");
+
+const listEl = document.getElementById("list");
+const statusEl = document.getElementById("status");
+const qEl = document.getElementById("q");
+const overlay = document.getElementById("overlay");
+const modal = document.getElementById("modal");
+
+function esc(s) {
+  return (s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+function renderList(events) {
+  if (!events.length) { listEl.innerHTML = ""; statusEl.textContent = "No markets found."; return; }
+  statusEl.textContent = "";
+  listEl.innerHTML = events.map(e => {
+    const chips = e.outcomes.map(o =>
+      `<span class="chip"><span class="name">${esc(o.name)}</span><span class="pct" style="color:${pctColor(o.price)}">${pct(o.price)}</span></span>`
+    ).join("");
+    const extra = e.outcome_count > e.outcomes.length
+      ? `<span class="more">+${e.outcome_count - e.outcomes.length} more</span>` : "";
+    return `<div class="card" data-slug="${esc(e.slug)}">
+      <div class="card-top">
+        <p class="card-title">${esc(e.title)}</p>
+        <div class="vol"><b>${fmtVol(e.volume_24hr)}</b> 24h<br><b>${fmtVol(e.volume)}</b> total</div>
+      </div>
+      <div class="outcomes">${chips}${extra}</div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".card").forEach(c =>
+    c.addEventListener("click", () => openEvent(c.dataset.slug)));
+}
+
+async function loadTop() {
+  statusEl.textContent = "Loading top markets…";
+  listEl.innerHTML = "";
+  try {
+    const r = await fetch("/api/dashboard?limit=12");
+    renderList(await r.json());
+  } catch (e) { statusEl.textContent = "Could not load markets. Is the server running?"; }
+}
+
+async function doSearch() {
+  const q = qEl.value.trim();
+  if (!q) return loadTop();
+  statusEl.textContent = `Searching for “${q}”…`;
+  listEl.innerHTML = "";
+  try {
+    const r = await fetch("/api/search?q=" + encodeURIComponent(q) + "&limit=15");
+    renderList(await r.json());
+  } catch (e) { statusEl.textContent = "Search failed."; }
+}
+
+async function openEvent(slug) {
+  overlay.classList.add("open");
+  modal.innerHTML = `<button class="close">&times;</button><div class="status">Loading…</div>`;
+  modal.querySelector(".close").addEventListener("click", closeModal);
+  try {
+    const r = await fetch("/api/event/" + encodeURIComponent(slug));
+    const e = await r.json();
+    const markets = e.markets.map(m => {
+      const rows = m.outcomes.map(o =>
+        `<div class="bar-row">
+           <span class="bar-name">${esc(o.name)}</span>
+           <span class="bar-track"><span class="bar-fill" style="width:${Math.max(2, o.price * 100)}%"></span></span>
+           <span class="bar-val" style="color:${pctColor(o.price)}">${pct(o.price)}</span>
+         </div>`).join("");
+      return `<div class="mkt"><p class="mkt-q">${esc(m.question)}</p>${rows}</div>`;
+    }).join("");
+    modal.innerHTML = `
+      <button class="close">&times;</button>
+      <h2>${esc(e.title)}</h2>
+      <div class="status" style="padding:0 0 6px">${fmtVol(e.volume_24hr)} 24h · ${fmtVol(e.volume)} total volume</div>
+      ${markets}
+      <p style="margin-top:14px"><a href="https://polymarket.com/event/${esc(e.slug)}" target="_blank" rel="noopener">Open on Polymarket ↗</a></p>`;
+    modal.querySelector(".close").addEventListener("click", closeModal);
+  } catch (err) {
+    modal.innerHTML = `<button class="close">&times;</button><div class="status">Could not load this market.</div>`;
+    modal.querySelector(".close").addEventListener("click", closeModal);
+  }
+}
+
+function closeModal() { overlay.classList.remove("open"); }
+overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+document.getElementById("searchBtn").addEventListener("click", doSearch);
+document.getElementById("topBtn").addEventListener("click", () => { qEl.value = ""; loadTop(); });
+qEl.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+
+loadTop();
+</script>
+</body>
+</html>
